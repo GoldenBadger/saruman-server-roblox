@@ -56,10 +56,8 @@ class ChessEnginePool(object):
     
     def __del__(self):
         self._engine_cancel.value = 1
-        print("Engine cancel requested.")
         for engine_process in self._engine_processes:
             engine_process.join()
-        print("Engine processes terminated.")
         
     
     def _engine_worker_work(self, engine_filename, engine_cancel):

@@ -58,3 +58,6 @@ target/
 
 # Databases
 *.sqlite3
+
+# Chess engine binaries
+Saruman
