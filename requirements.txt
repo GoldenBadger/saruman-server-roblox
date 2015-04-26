@@ -1,0 +1,4 @@
+Django==1.8
+plumbum==1.4.2
+python-chess==0.8.0
+rpyc==3.3.0
