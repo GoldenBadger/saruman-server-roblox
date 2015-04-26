@@ -9,6 +9,7 @@ import time
 from django.shortcuts import render
 from django.http import JsonResponse
 import rpyc
+import chess
 
 from .models import Game
 from api.chess_engine_pool import Move
@@ -37,10 +38,17 @@ def move(request):
         if game_id < 0:
             return JsonResponse({"status": "error",
                 "error_desc": "ID missing or invalid in request."})
+                
         position = str(request.GET.get("position", ""))
         if position == "":
             return JsonResponse({"status": "error",
-                "error_desc": "Position missing or invalid in request."})
+                "error_desc": "Position missing in request."})
+        try:
+            chess.Board(fen=position)
+        except ValueError:
+            return JsonResponse({"status": "error",
+                "error_desc": "Invalid position in request."})
+                
         depth = int(request.GET.get("depth", 7))
         if depth > 7:
             depth = 7
