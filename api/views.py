@@ -55,6 +55,9 @@ def move(request):
         
         try:
             game = Game.objects.get(id=game_id)
+            if game.game_over:
+                return JsonResponse({"status": "error",
+                    "error_desc": "A game with that ID does not exist."})
         except Game.DoesNotExist:
             return JsonResponse({"status": "error",
                 "error_desc": "A game with that ID does not exist."})
@@ -67,3 +70,36 @@ def move(request):
                 time.sleep(1)
             completed_move = conn.root.get_task(game_id)
             return JsonResponse({"status": "ok", "bestmove": completed_move.result})
+
+def quit(request):
+    if request.method == "GET":
+        game_id = int(request.GET.get("id", -1))
+        if game_id < 0:
+            return JsonResponse({"status": "error",
+                "error_desc": "ID missing or invalid in request."})
+        
+        exit_reason = int(request.GET.get("reason", -1))
+        if exit_reason < 0 or exit_reason > 7:
+            return JsonResponse({"status": "error",
+                "error_desc": "Reason missing or invalid in request."})
+        
+        plies_moved = int(request.GET.get("plies", -1))
+        if plies_moved < 0:
+            return JsonResponse({"status": "error",
+                "error_desc": "Number of plies missing or invalid in request."})
+        
+        try:
+            game = Game.objects.get(id=game_id)
+            if game.game_over:
+                return JsonResponse({"status": "error",
+                    "error_desc": "A game with that ID does not exist."})
+        except Game.DoesNotExist:
+            return JsonResponse({"status": "error",
+                "error_desc": "A game with that ID does not exist."})
+        
+        game.exit_reason = exit_reason
+        game.plies_moved = plies_moved
+        game.game_over = True
+        game.save()
+        
+        return JsonResponse({"status": "ok"})

@@ -7,6 +7,7 @@ from django.db import models
 # Model to store information about a game (i.e. a series of moves)
 class Game(models.Model):
     
+    game_over = models.BooleanField(default=False)
     player_elo = models.IntegerField(default=-1)
     exit_reason = models.IntegerField(default=-1)
     plies_moved = models.IntegerField(default=0)
