@@ -13,8 +13,8 @@ from multiprocessing import Process, Queue, Manager
 # First, we need to define what a move is.
 class Move(object):
     
-    def __init__(self, game_id, position, depth, result=None):
-        self.game_id = game_id
+    def __init__(self, move_id, position, depth, result=None):
+        self.move_id = move_id
         self.position = position
         self.depth = depth
         self.result = result
@@ -79,7 +79,7 @@ class ChessEnginePool(object):
                 else:
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
                         + output + "\n")
-                self._pool_output[move.game_id] = move
+                self._pool_output[move.move_id] = move
             except Empty:
                 pass
                 

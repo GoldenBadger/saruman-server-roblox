@@ -15,6 +15,7 @@ import rpyc
 import chess_engine_pool
 
 rpyc.core.protocol.DEFAULT_CONFIG["allow_pickle"] = True
+rpyc.core.protocol.DEFAULT_CONFIG["allow_public_attrs"] = True
 
 class ChessEnginePoolService(rpyc.Service):
     
@@ -25,8 +26,10 @@ class ChessEnginePoolService(rpyc.Service):
         print("Connection terminated.")
         
     def exposed_add_task(self, move):
-        print("Task added. ID: " + str(move.move_id))
-        return engine_pool.add_task(move)
+        local_move = chess_engine_pool.Move(move.move_id, move.position,
+            move.depth)
+        print("Task added. ID: " + str(local_move.move_id))
+        engine_pool.add_task(local_move)
     
     def exposed_is_task_complete(self, move_id):
         return engine_pool.is_task_complete(move_id)
