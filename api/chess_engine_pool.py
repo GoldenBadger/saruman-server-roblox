@@ -84,9 +84,9 @@ class ChessEnginePool(object):
                         scores.append(score)
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
-                    move.result = output[9:14]
+                    move.result = output[9:14].strip()
                 elif len(output) == 13:
-                    move.result = output[9:13]
+                    move.result = output[9:13].strip()
                 else:
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
                         + output + "\n")
