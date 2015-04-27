@@ -69,6 +69,8 @@ def move(request):
             while not conn.root.is_task_complete(game_id):
                 time.sleep(1)
             completed_move = conn.root.get_task(game_id)
+            game.engine_scores += (str(completed_move.score) + " ")
+            game.save()
             return JsonResponse({"status": "ok", "bestmove": completed_move.result})
 
 def quit(request):
@@ -101,5 +103,6 @@ def quit(request):
         game.plies_moved = plies_moved
         game.game_over = True
         game.save()
+        print(game.engine_scores)
         
         return JsonResponse({"status": "ok"})

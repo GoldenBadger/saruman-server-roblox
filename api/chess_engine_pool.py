@@ -5,6 +5,7 @@
 # Implements a thread pool system for processing chess move requests.
 
 import sys
+import re
 import uuid
 from queue import Empty
 from subprocess import Popen, PIPE
@@ -13,11 +14,12 @@ from multiprocessing import Process, Queue, Manager
 # First, we need to define what a move is.
 class Move(object):
     
-    def __init__(self, move_id, position, depth, result=None):
+    def __init__(self, move_id, position, depth, result=None, score=None):
         self.move_id = move_id
         self.position = position
         self.depth = depth
         self.result = result
+        self.score = score
 
 # Now we can define the actual pool
 class ChessEnginePool(object):
@@ -26,6 +28,7 @@ class ChessEnginePool(object):
         self._manager = Manager()
         self._pool_input = Queue()
         self._pool_output = self._manager.dict()
+        self._score_regex_pattern = "^(?=.*(score (?:cp|mate) [+\-0-9]*)).*$"
         
         self._engine_cancel = self._manager.Value("b", 0)
         self._engine_processes = []
@@ -70,7 +73,15 @@ class ChessEnginePool(object):
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
                 output = engine_process.stdout.readline()
+                scores = []
                 while not output.startswith("bestmove"):
+                    # Here we search for where the engine outputs a score and
+                    # store it in self.scores. This is so we can store average
+                    # data about the scores throughout a game
+                    regex = re.search(self._score_regex_pattern, output)
+                    if regex != None and regex.group(1).startswith('score cp '):
+                        score = int(regex.group(1)[9:])
+                        scores.append(score)
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
                     move.result = output[9:14]
@@ -79,6 +90,7 @@ class ChessEnginePool(object):
                 else:
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
                         + output + "\n")
+                move.score = int(scores[-1])
                 self._pool_output[move.move_id] = move
             except Empty:
                 pass
