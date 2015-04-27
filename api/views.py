@@ -103,6 +103,5 @@ def quit(request):
         game.plies_moved = plies_moved
         game.game_over = True
         game.save()
-        print(game.engine_scores)
         
         return JsonResponse({"status": "ok"})
