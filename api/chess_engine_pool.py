@@ -61,23 +61,25 @@ class ChessEnginePool(object):
         self._engine_cancel.value = 1
         for engine_process in self._engine_processes:
             engine_process.join()
-        
     
     def _engine_worker_work(self, engine_filename, engine_cancel):
-        engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
-                               universal_newlines=True, bufsize=1)
-            
-        while engine_cancel.value == 0:
+        def _check_for_and_restart_zombie():
             if engine_process.poll() != None:
                 # Then the engine process has died. Restart it.
-                del(engine_process) # Make sure the zombie is dead.
+                engine_process.terminate() # Make sure the zombie is dead.
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
+        
+        engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
+                               universal_newlines=True, bufsize=1)
+        
+        while engine_cancel.value == 0:
             try:
                 move = self._pool_input.get(True, 1)
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
+                _check_for_and_restart_zombie()
                 output = engine_process.stdout.readline()
                 scores = []
                 while not output.startswith("bestmove"):
@@ -88,6 +90,7 @@ class ChessEnginePool(object):
                     if regex != None and regex.group(1).startswith('score cp '):
                         score = int(regex.group(1)[9:])
                         scores.append(score)
+                    _check_for_and_restart_zombie()
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
                     move.result = output[9:14].strip()
