@@ -70,8 +70,8 @@ class ChessEnginePool(object):
         while engine_cancel.value == 0:
             if engine_process.poll() != None:
                 # Then the engine process has died. Restart it.
-                del(engine_process)
-                engine_process = engine_process = Popen(
+                del(engine_process) # Make sure the zombie is dead.
+                engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
             try:
