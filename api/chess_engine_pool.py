@@ -70,12 +70,16 @@ class ChessEnginePool(object):
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
+                engine_process.stdin.write("uci")
+                if engine_process.poll() == None:
+                    print("Process restarted.")
                 # Get the process to start evaluating the move again
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
         
         engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
                                universal_newlines=True, bufsize=1)
+        engine_process.stdin.write("uci")
         
         while engine_cancel.value == 0:
             try:
@@ -83,6 +87,8 @@ class ChessEnginePool(object):
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
                 _check_for_and_restart_zombie(engine_process, move)
+                if engine_process.poll() != None:
+                    print("Process still dead.")
                 output = engine_process.stdout.readline()
                 while not output.startswith("bestmove"):
                     # Here we search for where the engine outputs a score and
@@ -92,6 +98,8 @@ class ChessEnginePool(object):
                     if regex != None and regex.group(1).startswith('score cp '):
                         score = int(regex.group(1)[9:])
                     _check_for_and_restart_zombie(engine_process, move)
+                    if engine_process.poll() != None:
+                        print("Process still dead.")
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
                     move.result = output[9:14].strip()
