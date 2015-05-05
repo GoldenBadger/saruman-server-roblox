@@ -65,9 +65,14 @@ class ChessEnginePool(object):
     
     def _engine_worker_work(self, engine_filename, engine_cancel):
         engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
-            universal_newlines=True, bufsize=1)
+                               universal_newlines=True, bufsize=1)
             
         while engine_cancel.value == 0:
+            if engine_process.poll() != None:
+                # Then the engine process has died. Restart it.
+                engine_process = engine_process = Popen(
+                    engine_filename, stdin=PIPE, stdout=PIPE,
+                    universal_newlines=True, bufsize=1)
             try:
                 move = self._pool_input.get(True, 1)
                 engine_process.stdin.write("position fen " + move.position + "\n")
