@@ -66,6 +66,7 @@ class ChessEnginePool(object):
         def _check_for_and_restart_zombie():
             if engine_process.poll() != None:
                 # Then the engine process has died. Restart it.
+                print("Zombie process found. Restarting.")
                 engine_process.terminate() # Make sure the zombie is dead.
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
