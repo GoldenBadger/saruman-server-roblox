@@ -63,7 +63,7 @@ class ChessEnginePool(object):
             engine_process.join()
     
     def _engine_worker_work(self, engine_filename, engine_cancel):
-        def _check_for_and_restart_zombie():
+        def _check_for_and_restart_zombie(engine_process, move):
             if engine_process.poll() != None:
                 # Then the engine process has died. Restart it.
                 print("Zombie process found. Restarting.")
@@ -71,6 +71,9 @@ class ChessEnginePool(object):
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
+                # Get the process to start evaluating the move again
+                engine_process.stdin.write("position fen " + move.position + "\n")
+                engine_process.stdin.write("go depth " + str(move.depth) + "\n")
         
         engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
                                universal_newlines=True, bufsize=1)
@@ -80,7 +83,7 @@ class ChessEnginePool(object):
                 move = self._pool_input.get(True, 1)
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
-                _check_for_and_restart_zombie()
+                _check_for_and_restart_zombie(engine_process, move)
                 output = engine_process.stdout.readline()
                 scores = []
                 while not output.startswith("bestmove"):
@@ -91,7 +94,7 @@ class ChessEnginePool(object):
                     if regex != None and regex.group(1).startswith('score cp '):
                         score = int(regex.group(1)[9:])
                         scores.append(score)
-                    _check_for_and_restart_zombie()
+                    _check_for_and_restart_zombie(engine_process, move)
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
                     move.result = output[9:14].strip()
