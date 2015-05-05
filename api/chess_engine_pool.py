@@ -85,7 +85,6 @@ class ChessEnginePool(object):
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
                 _check_for_and_restart_zombie(engine_process, move)
                 output = engine_process.stdout.readline()
-                scores = []
                 while not output.startswith("bestmove"):
                     # Here we search for where the engine outputs a score and
                     # store it in self.scores. This is so we can store average
@@ -93,7 +92,6 @@ class ChessEnginePool(object):
                     regex = re.search(self._score_regex_pattern, output)
                     if regex != None and regex.group(1).startswith('score cp '):
                         score = int(regex.group(1)[9:])
-                        scores.append(score)
                     _check_for_and_restart_zombie(engine_process, move)
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
@@ -103,7 +101,7 @@ class ChessEnginePool(object):
                 else:
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
                         + output + "\n")
-                move.score = int(scores[-1])
+                move.score = score
                 self._pool_output[move.move_id] = move
             except Empty:
                 pass
