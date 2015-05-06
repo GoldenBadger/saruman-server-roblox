@@ -6,10 +6,14 @@
 
 import sys
 import re
-import uuid
+import logging
 from queue import Empty
 from subprocess import Popen, PIPE
 from multiprocessing import Process, Queue, Manager
+
+# Global veriable for the logger
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.ERROR)
 
 # First, we need to define what a move is.
 class Move(object):
@@ -28,13 +32,13 @@ class ChessEnginePool(object):
         self._manager = Manager()
         self._pool_input = Queue()
         self._pool_output = self._manager.dict()
-        self._score_regex_pattern = "^(?=.*(score (?:cp|mate) [+\-0-9]*)).*$"
+        self._score_regex_pattern = r"^(?=.*(score (?:cp|mate) [+\-0-9]*)).*$"
         
         self._engine_cancel = self._manager.Value("b", 0)
         self._engine_processes = []
-        for i in range(num_engines):
+        for _ in range(num_engines):
             engine_process = Process(target=self._engine_worker_work,
-                args=(engine_filename, self._engine_cancel))
+                                     args=(engine_filename, self._engine_cancel))
             engine_process.daemon = True
             engine_process.start()
             self._engine_processes.append(engine_process)
@@ -66,13 +70,13 @@ class ChessEnginePool(object):
         def _check_for_and_restart_zombie(engine_process, move):
             if engine_process.poll() != None:
                 # Then the engine process has died. Restart it.
-                print("Zombie process found. Restarting.")
+                LOGGER.warning("Zombie process found. Restarting.")
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
                 engine_process.stdin.write("uci")
                 if engine_process.poll() == None:
-                    print("Process restarted.")
+                    LOGGER.warning("Process restarted.")
                 # Get the process to start evaluating the move again
                 engine_process.stdin.write("position fen " + move.position + "\n")
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
@@ -89,7 +93,7 @@ class ChessEnginePool(object):
                 engine_process.stdin.write("go depth " + str(move.depth) + "\n")
                 engine_process = _check_for_and_restart_zombie(engine_process, move)
                 if engine_process.poll() != None:
-                    print("Process still dead.")
+                    LOGGER.error("Process still dead.")
                 output = engine_process.stdout.readline()
                 while not output.startswith("bestmove"):
                     # Here we search for where the engine outputs a score and
@@ -100,7 +104,7 @@ class ChessEnginePool(object):
                         score = int(regex.group(1)[9:])
                     engine_process = _check_for_and_restart_zombie(engine_process, move)
                     if engine_process.poll() != None:
-                        print("Process still dead.")
+                        LOGGER.error("Process still dead.")
                     output = engine_process.stdout.readline()
                 if len(output) >= 14:
                     move.result = output[9:14].strip()
@@ -108,8 +112,9 @@ class ChessEnginePool(object):
                     move.result = output[9:13].strip()
                 else:
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
-                        + output + "\n")
+                                     + output + "\n")
                 move.score = score
+                LOGGER.info("Bestmove: %s. Score: %d.", move.result, move.score)
                 self._pool_output[move.move_id] = move
             except Empty:
                 pass
