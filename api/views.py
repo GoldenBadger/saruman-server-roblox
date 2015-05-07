@@ -13,14 +13,18 @@ import chess
 
 from .models import Game
 from api.chess_engine_pool import Move
+from api import VERSION_MAJOR, VERSION_MINOR, VERSION_HOTFIX
 
 rpyc.core.protocol.DEFAULT_CONFIG["allow_pickle"] = True
 rpyc.core.protocol.DEFAULT_CONFIG["allow_public_attrs"] = True
 
 def version(request):
     if request.method == "GET":
-        config = json.load(open(os.getcwd() + "/config.json"))
-        return JsonResponse(config["version"])
+        return JsonResponse({
+            "major": VERSION_MAJOR,
+            "minor": VERSION_MINOR,
+            "hotfix": VERSION_HOTFIX
+        })
 
 def init(request):
     if request.method == "GET":
