@@ -12,3 +12,5 @@ class Game(models.Model):
     exit_reason = models.IntegerField(default=-1)
     plies_moved = models.IntegerField(default=0)
     engine_scores = models.TextField()
+    engine_colour = models.IntegerField(default=-1) # 0=White, 1=Black
+    game_depth = models.IntegerField(default=-1)

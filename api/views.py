@@ -13,22 +13,34 @@ import chess
 
 from .models import Game
 from api.chess_engine_pool import Move
+from api import VERSION_MAJOR, VERSION_MINOR, VERSION_HOTFIX
 
 rpyc.core.protocol.DEFAULT_CONFIG["allow_pickle"] = True
 rpyc.core.protocol.DEFAULT_CONFIG["allow_public_attrs"] = True
 
 def version(request):
     if request.method == "GET":
-        config = json.load(open(os.getcwd() + "/config.json"))
-        return JsonResponse(config["version"])
+        return JsonResponse({
+            "major": VERSION_MAJOR,
+            "minor": VERSION_MINOR,
+            "hotfix": VERSION_HOTFIX
+        })
 
 def init(request):
     if request.method == "GET":
         elo = int(request.GET.get("elo", -1))
+        depth = int(request.GET.get("depth", -1))
+        colour = int(request.GET.get("engine_colour", -1))
         if elo < 0:
             return JsonResponse({"status": "error",
-                "error_desc": "Elo missing or invalid in request."})
-        game = Game(player_elo=elo)
+                                 "error_desc": "Elo missing or invalid in request."})
+        if depth < 0:
+            return JsonResponse({"status": "error",
+                                 "error_desc": "Depth missing or invalid in request."})
+        if colour < 0:
+            return JsonResponse({"status": "error",
+                                 "error_desc": "Engine colour missing or invalid in request."})
+        game = Game(player_elo=elo, engine_colour=colour, game_depth=depth)
         game.save()
         return JsonResponse({"status": "ok", "id": game.id})
 
@@ -37,21 +49,24 @@ def move(request):
         game_id = int(request.GET.get("id", -1))
         if game_id < 0:
             return JsonResponse({"status": "error",
-                "error_desc": "ID missing or invalid in request."})
+                                 "error_desc": "ID missing or invalid in request."})
                 
         position = str(request.GET.get("position", ""))
         if position == "":
             return JsonResponse({"status": "error",
-                "error_desc": "Position missing in request."})
+                                 "error_desc": "Position missing in request."})
         try:
-            chess.Board(fen=position)
+            temp_board = chess.Board(fen=position)
+            if temp_board.status() != chess.STATUS_VALID:
+                raise ValueError("Invalid FEN.")
         except ValueError:
             return JsonResponse({"status": "error",
-                "error_desc": "Invalid position in request."})
+                                 "error_desc": "Invalid position in request."})
                 
         depth = int(request.GET.get("depth", 7))
-        if depth > 7:
-            depth = 7
+        if depth > 7 or depth < 1:
+            return JsonResponse({"status": "error",
+                                 "error_desc": "Depth missing or invalid in request."})
         
         try:
             game = Game.objects.get(id=game_id)
@@ -78,26 +93,26 @@ def quit(request):
         game_id = int(request.GET.get("id", -1))
         if game_id < 0:
             return JsonResponse({"status": "error",
-                "error_desc": "ID missing or invalid in request."})
+                                 "error_desc": "ID missing or invalid in request."})
         
         exit_reason = int(request.GET.get("reason", -1))
         if exit_reason < 0 or exit_reason > 7:
             return JsonResponse({"status": "error",
-                "error_desc": "Reason missing or invalid in request."})
+                                 "error_desc": "Reason missing or invalid in request."})
         
         plies_moved = int(request.GET.get("plies", -1))
         if plies_moved < 0:
             return JsonResponse({"status": "error",
-                "error_desc": "Number of plies missing or invalid in request."})
+                                 "error_desc": "Number of plies missing or invalid in request."})
         
         try:
             game = Game.objects.get(id=game_id)
             if game.game_over:
                 return JsonResponse({"status": "error",
-                    "error_desc": "A game with that ID does not exist."})
+                                     "error_desc": "A game with that ID does not exist."})
         except Game.DoesNotExist:
             return JsonResponse({"status": "error",
-                "error_desc": "A game with that ID does not exist."})
+                                 "error_desc": "A game with that ID does not exist."})
         
         game.exit_reason = exit_reason
         game.plies_moved = plies_moved
