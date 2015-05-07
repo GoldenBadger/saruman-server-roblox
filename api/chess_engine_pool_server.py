@@ -20,6 +20,7 @@ rpyc.core.protocol.DEFAULT_CONFIG["allow_pickle"] = True
 rpyc.core.protocol.DEFAULT_CONFIG["allow_public_attrs"] = True
 
 # Global veriable for the logger
+logging.basicConfig(level=logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.ERROR)
 
@@ -53,6 +54,7 @@ if __name__ == "__main__":
                         action="store_true")
     args = parser.parse_args()
     if args.verbose:
+        logging.basicConfig(level=logging.INFO)
         LOGGER.setLevel(logging.INFO)
         chess_engine_pool.LOGGER.setLevel(logging.INFO)
     
