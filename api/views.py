@@ -56,7 +56,9 @@ def move(request):
             return JsonResponse({"status": "error",
                                  "error_desc": "Position missing in request."})
         try:
-            chess.Board(fen=position)
+            temp_board = chess.Board(fen=position)
+            if temp_board.status() != chess.STATUS_VALID:
+                raise ValueError("Invalid FEN.")
         except ValueError:
             return JsonResponse({"status": "error",
                                  "error_desc": "Invalid position in request."})
