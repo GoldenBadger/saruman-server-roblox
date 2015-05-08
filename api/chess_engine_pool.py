@@ -114,7 +114,8 @@ class ChessEnginePool(object):
                     sys.stderr.write("(EE) Engine returned invalid move. Output: "
                                      + output + "\n")
                 move.score = score
-                LOGGER.info("Bestmove: %s. Score: %d.", move.result, move.score)
+                LOGGER.info("Position: %s. Bestmove: %s. Score: %d.",
+                            move.position, move.result, move.score)
                 self._pool_output[move.move_id] = move
             except Empty:
                 pass
