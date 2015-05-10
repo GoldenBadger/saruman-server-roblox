@@ -74,7 +74,7 @@ class ChessEnginePool(object):
                 engine_process = Popen(
                     engine_filename, stdin=PIPE, stdout=PIPE,
                     universal_newlines=True, bufsize=1)
-                engine_process.stdin.write("uci")
+                engine_process.stdin.write("uci\n")
                 if engine_process.poll() == None:
                     LOGGER.warning("Process restarted.")
                 # Get the process to start evaluating the move again
@@ -84,7 +84,7 @@ class ChessEnginePool(object):
         
         engine_process = Popen(engine_filename, stdin=PIPE, stdout=PIPE,
                                universal_newlines=True, bufsize=1)
-        engine_process.stdin.write("uci")
+        engine_process.stdin.write("uci\n")
         
         while engine_cancel.value == 0:
             try:
